@@ -32,7 +32,7 @@ def process_ntuple(k, nt_path, outdir, cfg):
             # infile['triggerAna'].ls()
             info_obj = infile['triggerAna/info']
             tree_names  = [k.GetName() for k in infile['triggerAna'].GetListOfKeys() if k.GetClassName()=='TTree']
-            tp_tree_names  = [f'TriggerPrimitives/{k.GetName()}' for k in infile['triggerAna/TriggerPrimitives'].GetListOfKeys() if k.GetClassName()=='TTree']
+            tp_tree_names  = [f'TriggerPrimitives/{k.GetName()}' for k in infile['triggerAna/TriggerPrimitives'].GetListOfKeys() if k.GetClassName()=='TTree' and k.GetName().startswith('tpmakerTPC') ]
     except OSError:
         print(f"Failed to open file {k} - skipping")
         return None
@@ -53,18 +53,21 @@ def process_ntuple(k, nt_path, outdir, cfg):
         pass
 
     add_ev_uid = cfg['add_ev_uid']
+    event_uid_func = "uint64_t ev_uid = run*(uint64_t)1000000+subrun*100+event; return ev_uid;"
 
     for t in tree_names:
         rdf = ROOT.RDataFrame(f'triggerAna/{t}', nt_path)
         if add_ev_uid:
-            rdf = rdf.Define("event_uid", "uint64_t ev_uid = run*(uint64_t)100000+event; return ev_uid;")
+            rdf = rdf.Define("event_uid", event_uid_func)
         rdf.Snapshot(f'triggerAna/{t}', outpath, options=rso)
 
+    # print(tp_tree_names)
+    # tp_tree_names = []
     for t in tp_tree_names:
         rdf = ROOT.RDataFrame(f'triggerAna/{t}', nt_path)
         for n, c in cfg['tp_cut'].items():
             if add_ev_uid:
-                rdf = rdf.Define("event_uid", "uint64_t ev_uid = run*(uint64_t)100000+event; return ev_uid;")
+                rdf = rdf.Define("event_uid", event_uid_func)
             rdf = rdf.Filter(c, n)            
         rdf.Snapshot(f'triggerAna/{t}', outpath, options=rso)
 
