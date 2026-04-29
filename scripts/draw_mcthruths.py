@@ -43,6 +43,7 @@ ROOT.EnableImplicitMT()
 
 datapath='data/radbkg/data-fixed/radiological_decay0_dunevd10kt_1x8x6_patched_wall_gammas_2337894_9_evfix_ana.ntuple.root'
 datapath='data/radbkg/data-fixed/*_ana.ntuple.root'
+# datapath='~/devel/dune-trigger/eos-vd-miniprod/radiological_decay0_dunevd10kt_1x8x6_patched_wall_gammas_batch2/ana/*.root'
 
 rdf = ROOT.RDataFrame(f'triggerAna/mctruths', datapath)
 

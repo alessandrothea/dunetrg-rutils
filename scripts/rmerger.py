@@ -2,6 +2,7 @@
 import click
 from rich import print
 from pathlib import Path
+from dunetrg_rutils.utils import resolve_input_files
 
 
 def merge_unsafe(ntuple_files, outfile):
@@ -18,9 +19,14 @@ def merge_unsafe(ntuple_files, outfile):
 
 
 @click.command()
-@click.argument('ntuple_files', type=click.Path(dir_okay=False, exists=True), nargs=-1)
+@click.argument('inputs', nargs=-1, required=True, metavar='FILE/GLOB/LIST...')
 @click.option('-o', '--outfile', type=click.Path(exists=False), default='tfile_merged.root')
-def main(ntuple_files, outfile):
+def main(inputs, outfile):
+
+    ntuple_files = resolve_input_files(list(inputs))
+    if not ntuple_files:
+        click.echo("Error: no ROOT files resolved from the given inputs.", err=True)
+        raise SystemExit(1)
 
     max_files = 500
 
