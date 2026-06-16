@@ -11,8 +11,9 @@ from dunetrg_rutils.utils import resolve_input_files
 
 @click.command()
 @click.option('--check-mctruth', is_flag=True, default=False)
+@click.option('--output-hist-file', type=click.Path(exists=False, file_okay=True, dir_okay=False), default='mctruth_hists.root')
 @click.argument('inputs', nargs=-1, required=True, metavar='FILE/GLOB/LIST...')
-def cli(inputs, check_mctruth):
+def cli(inputs, output_hist_file, check_mctruth):
     files = resolve_input_files(list(inputs))
     if not files:
         click.echo("Error: no ROOT files resolved from the given inputs.", err=True)
@@ -59,7 +60,7 @@ def cli(inputs, check_mctruth):
     var_name='kinetic_energy'
     var_title='Kinetic Energy'
 
-    output_file = ROOT.TFile("histograms.root", "RECREATE")
+    output_file = ROOT.TFile(output_hist_file, "RECREATE")
 
     def make_histos( var_name, var_title, var_bins, group_by, groups, output_file):
         # pass

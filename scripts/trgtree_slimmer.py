@@ -3,16 +3,41 @@
 
 # # Enable multi-threading with the specified amount of threads (let's start with just one)
 # # Note that in newer ROOT versions you simply need to write ROOT.EnableImplicitMT()
-# ROOT.EnableImplicitMT()
 
 from rich import print
 import click
 from pathlib import Path
-import re
 import concurrent.futures
 
 
-def process_ntuple(k, nt_path, outdir, cfg):
+def make_vector_filter(df, condition: str, exclude: list[str] = []):
+    """
+    Applies a boolean mask derived from `condition` to all vector branches
+    discovered from the RDataFrame itself. The condition must be an
+    RVec-compatible expression that returns a vector<bool>, e.g. "sot > 7".
+
+    Returns a new RDataFrame with all vector branches filtered in-place.
+    """
+    vector_branches = [
+        str(name)
+        for name in df.GetColumnNames()
+        if df.GetColumnType(name).startswith("ROOT::VecOps::RVec<")
+        and name not in exclude
+    ]
+
+    # for name in df.GetColumnNames():
+        # print(name, f"'{df.GetColumnType(name)}'", df.GetColumnType(name).startswith("ROOT::VecOps::RVec<"), name not in exclude)
+
+    print(f"Found vector branches: '{vector_branches}'")
+    df = df.Define("mask", condition)
+
+    for name in vector_branches:
+        df = df.Redefine(name, f"{name}[mask]")
+
+    return df, vector_branches
+
+
+def process_ntuple(k, nt_path, outdir, cfg, n_total):
 
     # Ready to go, let's load ROOT
     import ROOT
@@ -37,13 +62,16 @@ def process_ntuple(k, nt_path, outdir, cfg):
         print(f"Failed to open file {k} - skipping")
         return None
 
-    outpath=f'{outdir}/{Path(nt_path).name}'
+    p = Path(nt_path)
+    width = len(str(n_total))
+    outpath = f'{outdir}/{p.stem}_slimmed_{k:0{width}d}of{n_total}{p.suffix}'
     print(f"Saving fixed slimmed to {outpath}")
 
 
     rso = ROOT.RDF.RSnapshotOptions()
     rso.fMode = "UPDATE"
-    # rso.fOutputFormat = ROOT.RDF.ESnapshotOutputFormat.kRNTuple
+    if cfg['save_as_rtuple']:
+        rso.fOutputFormat = ROOT.RDF.ESnapshotOutputFormat.kRNTuple
 
     tree_names = [ t for t in tree_names if t in cfg['top_trees_mask']]
 
@@ -61,14 +89,16 @@ def process_ntuple(k, nt_path, outdir, cfg):
             rdf = rdf.Define("event_uid", event_uid_func)
         rdf.Snapshot(f'triggerAna/{t}', outpath, options=rso)
 
-    # print(tp_tree_names)
+    print(tp_tree_names)
     # tp_tree_names = []
     for t in tp_tree_names:
         rdf = ROOT.RDataFrame(f'triggerAna/{t}', nt_path)
         for n, c in cfg['tp_cut'].items():
             if add_ev_uid:
                 rdf = rdf.Define("event_uid", event_uid_func)
-            rdf = rdf.Filter(c, n)            
+            # rdf = rdf.Filter(c, n)            
+
+            rdf, v = make_vector_filter(rdf, c)
         rdf.Snapshot(f'triggerAna/{t}', outpath, options=rso)
 
     with ROOT.TFile(outpath, "UPDATE") as outfile:
@@ -77,21 +107,30 @@ def process_ntuple(k, nt_path, outdir, cfg):
     return outpath
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('ntuple_files', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-m', '--mode', type=click.Choice(['bkg', 'nu', 'pgun']), default='data')
+@click.option('-w', '--num-workers', type=click.IntRange(0,40), default=30)
 @click.option('-o', '--outdir', type=click.Path(file_okay=False), default='data')
-def main(ntuple_files, mode, outdir):
+@click.option('-f', '--filelist', type=click.Path(dir_okay=False, exists=True), default=None,
+              help='Text file with one input .root file path per line')
+def main(ntuple_files, mode, outdir, filelist, num_workers):
 
+    if filelist:
+        extra = Path(filelist).read_text().splitlines()
+        ntuple_files = list(ntuple_files) + [p for p in extra if p.strip() and not p.startswith('#')]
 
     cfg = {
         'top_trees_mask': [
             'event_summary',
+            'simide_summary',
         ],
+        # NOTE: In the new TTree format, there can o
         'tp_cut': {
-            'sot_cut': 'samples_over_threshold > 7'
+            'tp_filter': '(adc_peak > 45) & (samples_over_threshold > 9)'
         },
-        'add_ev_uid': True
+        'add_ev_uid': False,
+        'save_as_rtuple': False
     }
 
     match mode:
@@ -119,9 +158,10 @@ def main(ntuple_files, mode, outdir):
 
 
     # with concurrent.futures.ThreadPoolExecutor(max_workers=40) as executor:
-    with concurrent.futures.ProcessPoolExecutor(max_workers=30) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
-        future_to_outpaths = {executor.submit(process_ntuple, k, nt_path, outdir, cfg):k for k, nt_path in enumerate(ntuple_files)}
+        n_total = len(ntuple_files)
+        future_to_outpaths = {executor.submit(process_ntuple, k, nt_path, outdir, cfg, n_total): k for k, nt_path in enumerate(ntuple_files)}
         for future in concurrent.futures.as_completed(future_to_outpaths):
             k = future_to_outpaths[future]
             try:

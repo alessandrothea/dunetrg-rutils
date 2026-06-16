@@ -3,7 +3,7 @@ import pandas as pd
 import click
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('rootfile')
 def main(rootfile):
 

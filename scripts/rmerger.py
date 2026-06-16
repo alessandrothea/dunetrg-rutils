@@ -18,7 +18,7 @@ def merge_unsafe(ntuple_files, outfile):
     print(f"Merged {len(ntuple_files)} files into {outfile}")
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('inputs', nargs=-1, required=True, metavar='FILE/GLOB/LIST...')
 @click.option('-o', '--outfile', type=click.Path(exists=False), default='tfile_merged.root')
 def main(inputs, outfile):

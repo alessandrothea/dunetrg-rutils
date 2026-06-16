@@ -18,7 +18,9 @@ dependencies = [
     "pandas>=2.3.3",
     "particle>=0.26.2",
     "rich>=14.2.0",
-    "root==0.1a9",
+    "root>=0.1a12",
+    "scipy>=1.17.1",
+    "tabulate>=0.10.0",
     "uproot>=5.6.9",
 ]
 

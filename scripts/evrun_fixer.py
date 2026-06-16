@@ -62,7 +62,7 @@ def process_ntuple(k, nt_path, nt_base, outdir):
     return outpath
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('ntuple_files', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-o', '--outdir', type=click.Path(file_okay=False), default='data')
 def main(ntuple_files, outdir):

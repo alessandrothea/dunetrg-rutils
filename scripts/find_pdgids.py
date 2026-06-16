@@ -30,7 +30,7 @@ def resolve_input_files(inputs):
     return files
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('inputs', nargs=-1, required=True, metavar='FILE/GLOB/LIST...')
 def cli(inputs):
     files = resolve_input_files(list(inputs))
