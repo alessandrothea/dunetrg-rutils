@@ -82,4 +82,3 @@ def cli(inputs):
 
 if __name__ == '__main__':
     cli()
-

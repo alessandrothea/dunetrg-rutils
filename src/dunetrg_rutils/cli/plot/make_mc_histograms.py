@@ -43,7 +43,7 @@ def cli(inputs, output_hist_file, check_mctruth):
         for id, name in mctruth_blockid_map:
             if name not in master_mcthruth_blockid_map:
                 master_mcthruth_blockid_map[name] = set()
-            
+
             master_mcthruth_blockid_map[name].add(id)
 
     print(f"Files with no mctruth map: {files_map_not_found}")
@@ -92,11 +92,11 @@ def cli(inputs, output_hist_file, check_mctruth):
     groups = { f'"{gen_name}"':gen_name for gen_name in master_mcthruth_blockid_map }
 
     make_histos(
-        var_name, 
+        var_name,
         var_title,
         var_bins,
         group_by,
-        groups, 
+        groups,
         output_file
     )
 
@@ -109,11 +109,11 @@ def cli(inputs, output_hist_file, check_mctruth):
         }
 
     make_histos(
-        var_name, 
+        var_name,
         var_title,
         var_bins,
         group_by,
-        groups, 
+        groups,
         output_file
     )
 

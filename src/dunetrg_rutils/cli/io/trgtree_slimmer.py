@@ -47,7 +47,7 @@ def process_ntuple(k, nt_path, outdir, cfg, n_total):
     if nt_path.startswith('/eos/project/'):
         nt_path='root://eosproject.cern.ch/'+nt_path
     print(f"Processing file {k}: {nt_path}")
-    
+
     info_obj = None
     tree_names = []
     tp_tree_names = []
@@ -96,7 +96,7 @@ def process_ntuple(k, nt_path, outdir, cfg, n_total):
         for n, c in cfg['tp_cut'].items():
             if add_ev_uid:
                 rdf = rdf.Define("event_uid", event_uid_func)
-            # rdf = rdf.Filter(c, n)            
+            # rdf = rdf.Filter(c, n)
 
             rdf, v = make_vector_filter(rdf, c)
         rdf.Snapshot(f'triggerAna/{t}', outpath, options=rso)
@@ -127,7 +127,7 @@ def main(ntuple_files, mode, outdir, filelist, num_workers):
         ],
         # NOTE: In the new TTree format, there can o
         'tp_cut': {
-            'tp_filter': '(adc_peak > 45) & (samples_over_threshold > 9)'
+            'tp_filter': '(adc_peak > 45) & (samples_over_threshold >= 9)'
         },
         'add_ev_uid': False,
         'save_as_rtuple': False
@@ -139,7 +139,7 @@ def main(ntuple_files, mode, outdir, filelist, num_workers):
         case 'nu':
             cfg['top_trees_mask'] += [
                 'mctruths',
-                'mcneutrinos'                
+                'mcneutrinos'
             ]
         case 'pgun':
             cfg['top_trees_mask'] += [
@@ -147,7 +147,7 @@ def main(ntuple_files, mode, outdir, filelist, num_workers):
             ]
         case _:
             raise click.Error(f"Uknown mode! {mode}")
-        
+
     print(cfg)
 
     outdir = Path(outdir)

@@ -13,7 +13,7 @@ dependencies = [
     "awkward-pandas>=2023.8.0",
     "click>=8.3.1",
     "ipython>=8.18.1",
-    "jupyterlab>=4.4.10",
+    "jupyter>=1.1.1",
     "mplhep>=0.4.1",
     "pandas>=2.3.3",
     "particle>=0.26.2",
@@ -23,6 +23,17 @@ dependencies = [
     "tabulate>=0.10.0",
     "uproot>=5.6.9",
 ]
+
+[project.scripts]
+dunetrg-io-merge         = "dunetrg_rutils.cli.io.rmerger:main"
+dunetrg-io-slim          = "dunetrg_rutils.cli.io.trgtree_slimmer:main"
+dunetrg-inspect-pdgids   = "dunetrg_rutils.cli.inspect.find_pdgids:cli"
+dunetrg-inspect-trees    = "dunetrg_rutils.cli.inspect.show_trgtrees_size:main"
+dunetrg-inspect-trees-s  = "dunetrg_rutils.cli.inspect.show_trgtrees_size_simple:main"
+dunetrg-check-evuid      = "dunetrg_rutils.cli.check.check_evuid:main"
+dunetrg-check-ides       = "dunetrg_rutils.cli.check.check_ides:main"
+dunetrg-fix-evrun        = "dunetrg_rutils.cli.fix.evrun_fixer:main"
+dunetrg-plot-mc-hists    = "dunetrg_rutils.cli.plot.make_mc_histograms:cli"
 
 [tool.uv]
 package = true

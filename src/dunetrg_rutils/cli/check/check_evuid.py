@@ -9,10 +9,6 @@ def main(rootfile):
 
     import ROOT
 
-    # rootfile='data/radbkg/vd_1x8x6_radbkg_tppresel_ana.XXX.ntuple.root'
-    # rootfile='data/radbkg/vd_1x8x6_radbkg_tppresel_ana.YYY.ntuple.root'
-    # rootfile='data/radbkg/vd_1x8x6_radbkg_tppresel_ana.ntuple.root'
-
     es_rdf = ROOT.RDataFrame(
         'triggerAna/event_summary',
         rootfile
