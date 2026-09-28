@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import sys
+from pathlib import Path
 
 import click
 
 from rich import print
+from rich.progress import track
 
 from dunetrg_rutils.utils import resolve_input_files
 
@@ -12,9 +14,22 @@ from dunetrg_rutils.utils import resolve_input_files
 @click.command()
 @click.option('--check-mctruth', is_flag=True, default=False)
 @click.option('--output-hist-file', type=click.Path(exists=False, file_okay=True, dir_okay=False), default='mctruth_hists.root')
-@click.argument('inputs', nargs=-1, required=True, metavar='FILE/GLOB/LIST...')
-def cli(inputs, output_hist_file, check_mctruth):
+@click.option('--dir', '-d', 'directories', multiple=True, metavar='DIR',
+              help='Directory to scan for ROOT files (can be repeated).')
+@click.option('--pattern', '-p', default='**/*.root', show_default=True,
+              help='Glob pattern applied inside each --dir.')
+@click.argument('inputs', nargs=-1, metavar='FILE/GLOB/LIST...')
+def cli(inputs, output_hist_file, check_mctruth, directories, pattern):
     files = resolve_input_files(list(inputs))
+    for d in directories:
+        dp = Path(d)
+        if not dp.is_dir():
+            click.echo(f"Error: not a directory: {d}", err=True)
+            sys.exit(1)
+        matched = sorted(p for p in dp.glob(pattern) if p.suffix == '.root')
+        if not matched:
+            click.echo(f"Warning: no .root files matched '{pattern}' in {d}", err=True)
+        files.extend(str(p) for p in matched)
     if not files:
         click.echo("Error: no ROOT files resolved from the given inputs.", err=True)
         sys.exit(1)
@@ -29,8 +44,7 @@ def cli(inputs, output_hist_file, check_mctruth):
     master_mcthruth_blockid_map = {}
 
 
-    for f in files:
-        # print(f"  {f}")
+    for f in track(files, description="Reading files…"):
         f = ROOT.TFile(f)
 
         info_obj = f['triggerAna/info']
@@ -55,6 +69,7 @@ def cli(inputs, output_hist_file, check_mctruth):
     import particle
 
     rdf = ROOT.RDataFrame(f'triggerAna/mctruths', files)
+    ROOT.RDF.Experimental.AddProgressBar(rdf)
 
     var_bins = (150, 0., 0.015)
     var_name='kinetic_energy'
@@ -80,11 +95,17 @@ def cli(inputs, output_hist_file, check_mctruth):
                 .Histo1D((str(g_name), f"{var_title} [{g_name}])", *var_bins), f"{var_name}_{g_name}")
             )
 
+        print("Collecting handles")
+        handles = [ ROOT.RDF.RResultHandle(h) for n, h in histos.items()]
+
+        print("Running handles")
+        ROOT.RDF.RunGraphs(handles)
+
+        
         var_dir = output_file.mkdir(f"{var_name}_by_{group_by}")
         var_dir.cd()
 
-        for h in histos.values():
-            print(f"Writing {h.GetName()}")
+        for h in track(list(histos.values()), description="Writing histograms…"):
             h.SetDirectory(var_dir)
             h.Write()
 

@@ -109,12 +109,16 @@ def process_ntuple(k, nt_path, outdir, cfg, n_total):
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument('ntuple_files', type=click.Path(dir_okay=False, exists=True), nargs=-1)
-@click.option('-m', '--mode', type=click.Choice(['bkg', 'nu', 'pgun']), default='data')
+@click.option('-m', '--mode', type=click.Choice(['bkg', 'nu', 'pgun', 'n-gun']), default='data')
 @click.option('-w', '--num-workers', type=click.IntRange(0,40), default=30)
 @click.option('-o', '--outdir', type=click.Path(file_okay=False), default='data')
 @click.option('-f', '--filelist', type=click.Path(dir_okay=False, exists=True), default=None,
               help='Text file with one input .root file path per line')
-def main(ntuple_files, mode, outdir, filelist, num_workers):
+@click.option('-k', '--keep', multiple=True, metavar='BRANCH',
+              help='Additional branch/tree names to keep (repeatable).')
+@click.option('-d', '--drop', multiple=True, metavar='BRANCH',
+              help='Branch/tree names to remove from the keep list (repeatable).')
+def main(ntuple_files, mode, outdir, filelist, num_workers, keep, drop):
 
     if filelist:
         extra = Path(filelist).read_text().splitlines()
@@ -127,6 +131,8 @@ def main(ntuple_files, mode, outdir, filelist, num_workers):
         ],
         # NOTE: In the new TTree format, there can o
         'tp_cut': {
+            # VD filter: 4sigma from background and sot>9
+            # HD filter would be different!
             'tp_filter': '(adc_peak > 45) & (samples_over_threshold >= 9)'
         },
         'add_ev_uid': False,
@@ -145,8 +151,18 @@ def main(ntuple_files, mode, outdir, filelist, num_workers):
             cfg['top_trees_mask'] += [
                 'mctruths',
             ]
+        case 'n-gun':
+            cfg['top_trees_mask'] += [
+                'mctruths',
+                'mcparticles',
+            ]
         case _:
             raise click.Error(f"Uknown mode! {mode}")
+
+    if keep:
+        cfg['top_trees_mask'] += list(keep)
+    if drop:
+        cfg['top_trees_mask'] = [t for t in cfg['top_trees_mask'] if t not in drop]
 
     print(cfg)
 

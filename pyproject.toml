@@ -33,7 +33,8 @@ dunetrg-inspect-trees-s  = "dunetrg_rutils.cli.inspect.show_trgtrees_size_simple
 dunetrg-check-evuid      = "dunetrg_rutils.cli.check.check_evuid:main"
 dunetrg-check-ides       = "dunetrg_rutils.cli.check.check_ides:main"
 dunetrg-fix-evrun        = "dunetrg_rutils.cli.fix.evrun_fixer:main"
-dunetrg-plot-mc-hists    = "dunetrg_rutils.cli.plot.make_mc_histograms:cli"
+dunetrg-plot-make-mc-hists = "dunetrg_rutils.cli.plot.make_mc_histograms:cli"
+dunetrg-plot-save-mc-plots = "dunetrg_rutils.cli.plot.plot_mc_histograms:cli"
 
 [tool.uv]
 package = true
